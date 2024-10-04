@@ -44,7 +44,13 @@ results = {}
 
 # Function to perform the HTTP request
 def check_host(ip_port, url_host):
-    ip, port = ip_port.split(':')
+    try:
+        # Split IP and port, skip if format is incorrect
+        ip, port = ip_port.split(':')
+    except ValueError:
+        print(f"Skipping invalid IP:port format: '{ip_port}'")
+        return
+
     protocol = 'https' if port in ['443', '8443'] else 'http'
     url = f"{protocol}://{ip}:{port}"
 
