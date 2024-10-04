@@ -13,7 +13,7 @@ def print_header():
 ██║     █████╗  ██║██╔██╗ ██║██║  ██║█████╗  ██████╔╝
 ██║     ██╔══╝  ██║██║╚██╗██║██║  ██║██╔══╝  ██╔══██╗
 ╚██████╗██║     ██║██║ ╚████║██████╔╝███████╗██║  ██║
- ╚═════╝╚═╝     ╚═╝╚═╝  ╚═══╝╚═════╝ ╚══════╝╚═╝  ╚═╝
+ ╚═════╝╚═╝     ╚═╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝
                                                      
     """
     print(header)
@@ -58,25 +58,22 @@ def check_host(ip_port, url_host):
         'Host': url_host
     }
 
-    # Indication of the current processing
-    print(f"Processing IP: {ip}, Port: {port}, Host: {url_host}...")
-
     try:
         response = requests.get(url, headers=headers, timeout=5, verify=False)
         status_code = response.status_code
         response_size = len(response.content)
         
-        # Grouping key based on IP and Port
-        key = (ip, port)
+        # Grouping key based on IP, Port, Status, and Response Size
+        key = (ip, port, status_code, response_size)
         if key not in results:
             results[key] = []
-        results[key].append((url_host, status_code, response_size))
+        results[key].append(url_host)
     except Exception as e:
         # Handle errors separately using a unique key for errors
-        key = (ip, port)
+        key = (ip, port, 'Error', str(e))
         if key not in results:
             results[key] = []
-        results[key].append((url_host, 'Error', str(e)))
+        results[key].append(url_host)
 
 # Main function
 def main():
@@ -89,22 +86,42 @@ def main():
     ip_ports = read_list_from_file(args.ip_ports)
     url_hosts = read_list_from_file(args.url_hosts)
 
-    # Iterate over the IP:ports and URLs
+    # Iterate over the IP:ports
     for ip_port in ip_ports:
+        # Print the processing message only once per IP:port combination
+        ip, port = ip_port.split(':')
+        print(f"Processing IP: {ip}, Port: {port}...")
         for url_host in url_hosts:
             check_host(ip_port, url_host)
 
     # Print grouped results
     print("\nFinal Grouped Results:\n")
     divider = "=" * 50  # Divider for separating different IP:port groups
-    for key, hosts in results.items():
-        ip, port = key
+    # Extract unique IP and port combinations
+    ip_port_keys = set((key[0], key[1]) for key in results.keys())
+    
+    for ip_port_key in ip_port_keys:
+        ip, port = ip_port_key
         print(f"{divider}")
         print(f"IP: {ip:<15} Port: {port:<5}")
         print(f"{divider}")
-        for host_info in hosts:
-            host, status, size = host_info
-            print(f"Host: {host:<30} Status: {status:<6} Size: {size}")
+
+        # Group hosts by their status and size for the same IP and port
+        grouped_hosts = {}
+        for key, hosts in results.items():
+            if key[0] == ip and key[1] == port:
+                status = key[2]
+                size = key[3]
+                group_key = (status, size)
+                if group_key not in grouped_hosts:
+                    grouped_hosts[group_key] = []
+                grouped_hosts[group_key].extend(hosts)
+
+        # Print the grouped hosts for the current IP and port
+        for (status, size), hosts in grouped_hosts.items():
+            print(f"Status: {status:<6} Size: {size}")
+            for host in hosts:
+                print(f"  Host: {host}")
         print("\n")
 
 if __name__ == "__main__":
