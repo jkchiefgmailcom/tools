@@ -59,7 +59,8 @@ def check_host(ip_port, url_host):
     }
 
     try:
-        response = requests.get(url, headers=headers, timeout=5, verify=False)
+        # Disable automatic redirects by setting allow_redirects=False
+        response = requests.get(url, headers=headers, timeout=5, verify=False, allow_redirects=False)
         status_code = response.status_code
         response_size = len(response.content)
         
@@ -87,10 +88,19 @@ def main():
     url_hosts = read_list_from_file(args.url_hosts)
 
     # Iterate over the IP:ports
+    processed_ips = set()  # Track processed IP:port combinations
     for ip_port in ip_ports:
-        # Print the processing message only once per IP:port combination
+        # Skip invalid IP:port formats
+        if ':' not in ip_port:
+            print(f"Skipping invalid IP:port format: '{ip_port}'")
+            continue
+
         ip, port = ip_port.split(':')
-        print(f"Processing IP: {ip}, Port: {port}...")
+        # Print the processing message only once per unique IP:port combination
+        if (ip, port) not in processed_ips:
+            print(f"Processing IP: {ip}, Port: {port}...")
+            processed_ips.add((ip, port))  # Mark as processed
+
         for url_host in url_hosts:
             check_host(ip_port, url_host)
 
