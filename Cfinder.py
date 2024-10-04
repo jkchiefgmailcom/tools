@@ -129,9 +129,15 @@ def main():
 
         # Print the grouped hosts for the current IP and port
         for (status, size), hosts in grouped_hosts.items():
-            print(f"Status: {status:<6} Size: {size}")
-            for host in hosts:
-                print(f"  Host: {host}")
+            if len(hosts) == len(url_hosts):
+                # All hosts for this IP:port have the same status and size
+                print(f"Status: {status:<6} Size: {size}")
+                print(f"  For all tested host headers")
+            else:
+                # Print each host individually if they are not all the same
+                print(f"Status: {status:<6} Size: {size}")
+                for host in hosts:
+                    print(f"  Host: {host}")
         print("\n")
 
 if __name__ == "__main__":
